@@ -1,0 +1,16 @@
+[project]
+name = "yt-playlist-seo-pipeline"
+version = "0.1.0"
+description = "Channel-agnostic YouTube playlist metadata update pipeline"
+requires-python = ">=3.10"
+# YouTube API + OAuth, the Gemini REST layer (requests + python-dotenv), and the
+# xlsx report generator (openpyxl). A separate whisper fallback environment is
+# used for transcription and is not part of this environment.
+dependencies = [
+    "google-auth",
+    "google-auth-oauthlib",
+    "google-api-python-client",
+    "requests",
+    "python-dotenv",
+    "openpyxl",
+]

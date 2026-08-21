@@ -1,0 +1,52 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+client_secret.json
+token.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.python-version
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs and temp
+*.log
+*.tmp
+tmp/
+temp/
+
+# OS / system
+Thumbs.db
+desktop.ini
+
+# repo-specific: per-channel run data + creds live in channels/
+channels/
+*secret*/
+*.session
+*.pickle
