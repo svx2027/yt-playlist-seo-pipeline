@@ -24,9 +24,35 @@ Landing here Aug 21-27, 2026 (see the commit history for progress).
   for a Whisper fallback.
 - `core/revert.py` / `core/revert_playlist.py` — restore video or playlist metadata
   from a snapshot if something goes wrong. Never deletes anything.
+- `core/write_descriptions.py` — generates a proposed title, description, and tags
+  per video, grounded in that video's transcript. Every piece of channel identity
+  (creator, exam, links, hashtags, year tag) comes from `config.json`, never
+  hardcoded. Enforces in code (not just in the prompt): the revenue link sits in
+  the first 200 characters, every link from the old description still appears in
+  the new one (a superset, never a silent drop), every link is actually clickable,
+  and control characters the model sometimes emits get stripped before anything
+  is compared against the live page. Writes drafts only — nothing is pushed here.
+  **Not runnable end-to-end yet** — it also resolves each video's transcript source
+  through `verify_truth` (imported per-video, so it fails that one video rather than
+  crashing the run), which is next up.
+- `core/build_chapters.py` / `core/chapter_windows.py` — chapter timestamps. A
+  short video is chaptered in one pass; a long one is cut into windows and each
+  window is labelled *blind to the others*, because the alternative — sampling a
+  long transcript and letting the model guess where a topic starts — is how a
+  structurally perfect chapter list ends up pointing at the wrong content: the
+  timestamp is real (it gets snapped to an actual transcript cue) but the label is
+  a lie. The windowed path also refuses to open a chapter inside a sales pitch,
+  and repairs any label that comes back truncated or identical to an earlier one
+  in the same video. **Not runnable standalone yet** — both files import
+  `verify_truth`, the source-trust and promo-detection module, which is next up
+  (see below).
+- `core/inject_chapters.py` — folds a built chapter block into the proposed
+  description: replaces a stale block, inserts a fresh one, or strips one entirely
+  from a video that got waived after already being chaptered. Runs standalone
+  today (no external dependencies).
 
-More of the engine (description generation, chapter timestamps, the auditor/skeptic
-verification layer) is landing over the next few days.
+More of the engine (the auditor/skeptic verification layer, incl. `verify_truth`)
+is landing over the next few days — see the commit history for progress.
 
 ## Requirements
 
