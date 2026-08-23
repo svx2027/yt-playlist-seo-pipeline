@@ -32,9 +32,8 @@ Landing here Aug 21-27, 2026 (see the commit history for progress).
   the new one (a superset, never a silent drop), every link is actually clickable,
   and control characters the model sometimes emits get stripped before anything
   is compared against the live page. Writes drafts only — nothing is pushed here.
-  **Not runnable end-to-end yet** — it also resolves each video's transcript source
-  through `verify_truth` (imported per-video, so it fails that one video rather than
-  crashing the run), which is next up.
+  Now runnable: it resolves each video's transcript source through `verify_truth`
+  (imported per-video, so it fails that one video rather than crashing the run).
 - `core/build_chapters.py` / `core/chapter_windows.py` — chapter timestamps. A
   short video is chaptered in one pass; a long one is cut into windows and each
   window is labelled *blind to the others*, because the alternative — sampling a
@@ -43,16 +42,40 @@ Landing here Aug 21-27, 2026 (see the commit history for progress).
   timestamp is real (it gets snapped to an actual transcript cue) but the label is
   a lie. The windowed path also refuses to open a chapter inside a sales pitch,
   and repairs any label that comes back truncated or identical to an earlier one
-  in the same video. **Not runnable standalone yet** — both files import
-  `verify_truth`, the source-trust and promo-detection module, which is next up
-  (see below).
+  in the same video. Now runnable: both files import `verify_truth` (below).
 - `core/inject_chapters.py` — folds a built chapter block into the proposed
   description: replaces a stale block, inserts a fresh one, or strips one entirely
   from a video that got waived after already being chaptered. Runs standalone
   today (no external dependencies).
+- `core/verify_truth.py` — the truth gate: is each chapter actually true of the
+  audio at its own timestamp, not just well-formed? Three deterministic,
+  cost-free checks feed the model skeptic a narrowed queue instead of asking it
+  to re-read everything blind: **source trust** (refuses to build from an
+  auto-translated caption track masquerading as the real thing), **promo
+  landing** (a chapter may never open inside a sales pitch — a student who
+  clicks a chapter title is promised teaching, not an ad), and **label drift**
+  (do the label's distinctive words actually occur at its own timestamp, or only
+  elsewhere in the video? — the signature of a model that sampled a long
+  transcript, guessed a timestamp, and had the guess "snapped" onto a real cue,
+  which makes the *time* real while the *label* stays a lie). It also carries the
+  label-hygiene, duplicate-label, and generic-label checks that
+  `build_chapters.py`/`chapter_windows.py` both import from here rather than
+  reimplementing, because two copies of one rule that can silently disagree is
+  not a gate. Every check that can be proven is a BLOCKER; everything else is
+  narrowed into a REVIEW queue for a human or model skeptic to adjudicate.
+- `core/verify_transcripts.py` — the second opinion on a module's timed
+  transcripts, by content, run independently of `verify_truth`'s own parser on
+  purpose (a shared parser reproduces its own bugs instead of catching them).
+  Checks coverage (a transcript that stops at 60% of the runtime silently blinds
+  the windowed chapter builder for the rest of the video), script (a file whose
+  name asserts English but is mostly a different script), and hallucination
+  loops — judged by how the repetition is *spread* across the runtime, not by
+  raw count, so a phrase a lesson is legitimately about isn't mistaken for a
+  stuck decoder.
 
-More of the engine (the auditor/skeptic verification layer, incl. `verify_truth`)
-is landing over the next few days — see the commit history for progress.
+More of the engine (the findings-gate and pre-flight auditor, and the platform-
+outcome checks) is landing over the next few days — see the commit history for
+progress.
 
 ## Requirements
 

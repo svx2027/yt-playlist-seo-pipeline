@@ -437,8 +437,8 @@ def repair_labels(key, model, chapters, cues, duration, cfg, log=print):
                 why_retry = "it cleaned away to nothing"
             elif VT.truncated_label(cand_f):
                 why_retry = "it stopped mid-phrase again"
-            elif VT.hygiene(cand_f, module_words):
-                why_retry = "; ".join(VT.hygiene(cand_f, module_words))
+            elif VT.hygiene(cand_f, module_words, exam):
+                why_retry = "; ".join(VT.hygiene(cand_f, module_words, exam))
             elif any(VT.label_key(cand_f) == VT.label_key(l2) for j, (t2, l2) in enumerate(out) if j != i):
                 why_retry = "it still matches a sibling label once filler verbs are discounted"
             elif act == "MOVE":
