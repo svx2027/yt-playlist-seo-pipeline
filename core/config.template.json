@@ -1,0 +1,144 @@
+{
+  "_comments": {
+    "_what_is_this_file": "TEMPLATE. Copy it to channels/<name>/config.json and replace EVERY value written as <...>. Never put a password or an API key in this file; it carries PATHS to secrets, never secrets.",
+    "_why_there_are_no_working_defaults": "This template deliberately ships PLACEHOLDERS, not a previous client's working values. It used to ship a real exam suffix, real links and real hashtags, so a new channel that forgot a key did not crash: it quietly published the PREVIOUS client's identity. A template whose defaults work is worse than one that fails, because a failure is visible and a wrong client's link is not. Run `python3 ../../core/assert_config_ready.py` from the channel folder: it REFUSES while any placeholder remains.",
+    "_required_before_any_write": "expected_channel_id, playlist_id, title_rule.suffix, description.link_first200, description.hashtags_displayed, identity.*, transcripts.audio_lang. The rest can be filled as the phases need them.",
+    "channel_name": "Plain-English channel name. Used only in on-screen messages so you know which channel you are on.",
+    "expected_channel_id": "REQUIRED SAFETY FIELD. The channel's UC... id. Every script that CHANGES anything asserts the logged-in account matches this before touching a video, and stops if it does not. This is the wrong-channel guard.",
+    "playlist_id": "The PL... id from the playlist URL (everything after 'list=').",
+    "playlist_name": "Plain-English playlist name, for on-screen messages.",
+    "channel_aliases": "[[UC id, @handle], ...] for this channel and its sister channels. Used to recognise the same channel written two ways, so a link-preservation check does not report a dropped link when only the URL form changed.",
+    "in_scope_video_ids": "THE SCOPE FENCE. The exact video_ids this run may touch. A playlist is often a mixed dump, so this is what keeps a run inside its slice. WARNING: an EMPTY list means ALL videos to the writer, while some other stages do not read the fence at all. Know which stages honour it before leaving it empty. Repoint it between units.",
+    "phases_file": "Filename of this unit's phases json, BUILT from the module map by a builder script, never hand-typed.",
+    "identity": "Who this channel is, for the writer and every prompt. 'creator_variants' = the faculty/creator name in the forms that may appear in a title, longest first, so a fallback can shorten to fit the length limit. 'exam' = the exam or subject shorthand. 'exam_context' = one sentence telling the model what this course is. 'named_entities' = brand and product names that must be spelled exactly. 'positioning' = the client-facing frame, which is always 'already performing, now optimised', never criticism of their existing work.",
+    "title_rule": "'suffix' is appended to every title (mind the leading space before the separator). VERIFY THE LIVE EDITION FIRST: some exams are named for the year they are HELD, others for the ADMISSION year and run the December before, so the correct year differs by exam. 'replace_years' lists OLD year markers to replace in place; LEAVE IT EMPTY when years in titles are FACTUAL, so a genuine past-paper year is never overwritten. 'max_len' 100 is the platform limit: longer titles are skipped and flagged for hand-writing. Hand-written per-video titles travel in the proposed_title CSV column.",
+    "replace_years": "Top-level duplicate of title_rule.replace_years, read by some stages. Keep the two in agreement or leave both empty.",
+    "factual_year_ids": "video_ids whose year is a GENUINE past-paper reference and must never be rewritten by the year rule.",
+    "description": "'link_first200' must appear inside the first 200 characters as a clean https URL followed by whitespace, or the platform will not make it clickable. 'link_upgrade_pending' true means this link is temporary and a tracked redirect is owed. 'hashtags_displayed' are the first 3 and are the only ones the platform shows, in this exact order; 'hashtags_tail' adds 2 more for exactly 5. NEVER put a hashtag in the TITLE: it suppresses the description hashtag row. 'link_sections' is the grouped link hub appended to every description, and the rewrite is a SUPERSET: every URL in the ORIGINAL description must survive into the new one.",
+    "link_typo_fixes": "{malformed url: corrected url}. Fixes obvious typos in the client's own original links. Each fix is flagged, never silent.",
+    "tags": "Backend keyword tags (not hashtags), uniform across the playlist. Under 500 characters total. NOTE: the API stores tags ALPHABETICALLY, so tag ORDER is not controllable and no claim about 'the first tag' is ever true. Per-video tags travel in the proposed_tags CSV column.",
+    "forbidden_terms": "Strings that must NEVER reach a client-facing artifact, for example a competitor or a previous client's name. The report builders ABORT if one would appear in the output.",
+    "module_words": "Words that must never be tacked onto a CHAPTER LABEL (the viewer already opened the video; repeating the module name tells them nothing about where to jump). This list is UNIONED with every topic in module_map.csv at runtime, so a new unit is covered the day its rows exist. Never replace that with a hand-typed list.",
+    "chapters": "'windowed_threshold_s': any video at or over this duration is chaptered window by window, so the model sees only that window's own cues instead of a sampled transcript. A transcript that would TRUNCATE also forces the windowed path REGARDLESS of duration, because truncation, not length, is what blinds the model to the timeline. RE-CHECK this threshold against the new playlist's duration spread from the phase 0a audit. 'require_source_kind' REFUSES any chapter built from a source kind other than the named one instead of quietly falling back; unset it for a channel with no such requirement. 'min_gap_waivers' are per-video, permanent, and survive every repoint.",
+    "chapter_waived": "Per-video, PERMANENT. {video_id: {decided_by, decided_on, reason}} for videos that honestly cannot carry a chapter list. The reason must be real: a waiver with no reason is indistinguishable from a mistake, and the gates refuse to honour one. A waived video contributes ZERO chapters to any client number.",
+    "duplicate_content_ids": "Per-video, PERMANENT. Groups of video_ids that are the SAME LESSON uploaded more than once. For those, an identical title is accurate and inventing a difference would be fabrication, so the duplicate-title rule is exempted for the group and the evidence is recorded next to it.",
+    "transcripts": "'source' is the primary caption path. 'langs' are the caption languages to try, in order. 'audio_lang' is the SPOKEN language of this channel and it drives which timed track is TRUSTED: <id>.<audio_lang>.vtt is the native ASR track, while an English track on a non-English channel is an AUTO-TRANSLATION and is UNTRUSTED for chapters. Do not infer the spoken language from the mere existence of an English track: a channel can expose an English-labelled track alongside a native one where the English is a translation. Set audio_lang to 'en' only for a genuinely English-spoken channel. THIS FIELD HAS NO SAFE DEFAULT: leaving it wrong makes the resolver prefer the wrong file silently.",
+    "comment": "'variants' is a list of 1 or more comment texts; the poster rotates them so not every video gets an identical comment. PINNING IS MANUAL: the API cannot pin, so the owner pins in Studio.",
+    "playlist_level": "The playlist's OWN title and description. 'new_title' under 150 characters. The updater backs up the old values before writing.",
+    "batch": "'size' videos per sitting before pausing for review. 'quota_daily_budget' units per day, kept under the free daily allowance so there is headroom. Budget the dry run's own read cost too.",
+    "gemini_env_path": "Full path to the .env holding the model API key. Scripts read the key by path at runtime; the key is never copied into this project and never printed.",
+    "csv_paths": "Filenames each phase reads and writes, relative to the channel folder.",
+    "identity_shared_with": "Channel folder names whose shared identity values are DELIBERATE, for example a sibling playlist of the same client. assert_config_ready warns about every identity value two channels share; naming the sibling here records that you confirmed it rather than inherited it."
+  },
+  "channel_name": "<channel name>",
+  "expected_channel_id": "<UC... channel id  -  REQUIRED, scripts refuse to write without it>",
+  "playlist_id": "<PL... playlist id>",
+  "playlist_name": "<plain-english playlist name>",
+  "channel_aliases": [
+    [
+      "<UC... id>",
+      "<@handle>"
+    ]
+  ],
+  "in_scope_video_ids": [],
+  "phases_file": "<_<unit>_phases.json, built from module_map.csv>",
+  "identity_shared_with": [],
+  "identity": {
+    "creator_variants": [
+      "<Full Name With Brand>",
+      "<Full Name>",
+      "<Short Name>"
+    ],
+    "exam": "<exam or subject shorthand>",
+    "exam_context": "<one sentence describing this course, for the model>",
+    "named_entities": [
+      "<brand>",
+      "<product>"
+    ],
+    "positioning": "<client-facing frame: already performing, now optimised to perform even better>"
+  },
+  "title_rule": {
+    "suffix": "< | EXAM YEAR  -  VERIFY THE LIVE EDITION FIRST>",
+    "replace_years": [],
+    "max_len": 100
+  },
+  "replace_years": [],
+  "factual_year_ids": [],
+  "description": {
+    "link_first200": "<https://... clean url, must be followed by whitespace>",
+    "link_upgrade_pending": false,
+    "hashtags_displayed": [
+      "<#brand>",
+      "<#exam>",
+      "<#subject>"
+    ],
+    "hashtags_tail": [
+      "<#tag4>",
+      "<#tag5>"
+    ],
+    "hashtags_overrides": {},
+    "link_sections": [
+      {
+        "header": "<section heading, e.g. Start your prep>",
+        "links": [
+          {
+            "label": "<what this link is: >",
+            "url": "<https://...>"
+          }
+        ]
+      }
+    ]
+  },
+  "link_typo_fixes": {},
+  "tags": [
+    "<tag 1>",
+    "<tag 2>",
+    "<tag 3>"
+  ],
+  "forbidden_terms": [],
+  "module_words": [],
+  "chapters": {
+    "windowed_threshold_s": 900,
+    "window_seconds_per_window": 180,
+    "min_windows": 4,
+    "max_windows": 14,
+    "intro_label_fallback": "What This Session Covers",
+    "intro_label_promo_fallback": "Course Offer and Session Plan",
+    "require_source_kind": null,
+    "min_gap_waivers": {}
+  },
+  "chapter_waived": {},
+  "duplicate_content_ids": [],
+  "transcripts": {
+    "source": "yt-dlp-captions",
+    "langs": [
+      "<primary caption lang>",
+      "en"
+    ],
+    "audio_lang": "<spoken language code  -  NO SAFE DEFAULT, see comments>"
+  },
+  "comment": {
+    "variants": [
+      "<comment text variant 1>"
+    ],
+    "link": "<https://...>"
+  },
+  "playlist_level": {
+    "new_title": "<playlist title, <= 150 chars>",
+    "new_description": "<playlist description: module-structured, with the clickable https link>"
+  },
+  "batch": {
+    "size": 25,
+    "quota_daily_budget": 9000
+  },
+  "gemini_env_path": "<absolute path to the .env holding the model API key>",
+  "csv_paths": {
+    "snapshot": "snapshots/snapshot.csv",
+    "extracted": "descriptions_extracted.csv",
+    "proposed": "descriptions_proposed.csv",
+    "approved": "descriptions_approved.csv",
+    "update_log": "update_log.csv",
+    "comments_log": "comments_log.csv",
+    "revert_log": "revert_log.csv"
+  }
+}

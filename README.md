@@ -73,9 +73,27 @@ Landing here Aug 21-27, 2026 (see the commit history for progress).
   raw count, so a phrase a lesson is legitimately about isn't mistaken for a
   stuck decoder.
 
-More of the engine (the findings-gate and pre-flight auditor, and the platform-
-outcome checks) is landing over the next few days — see the commit history for
-progress.
+- `core/config.template.json` — the one config file every script reads from a
+  per-channel working folder. Ships with placeholders, never a previous run's
+  working values: a template with real-looking defaults is more dangerous than
+  one that fails outright, because a failure is visible and a stale value
+  silently publishing onto the wrong channel is not.
+
+More of the engine (the findings-gate and pre-flight auditor, the OAuth setup
+script, and the platform-outcome checks) is landing over the next few days — see
+the commit history for progress.
+
+## Operator prompts
+
+`prompts/` holds the two copy-paste prompts this project actually runs on, because
+the intended operator is not a coder. `prompts/EXECUTION_COPILOT.md` turns any chat
+model into a one-step-at-a-time hand-holder for the live run (state the phase,
+state what will happen, wait for confirmation, never advance on a mismatch — the
+same discipline that keeps a beginner from fumbling an OAuth grant or a live
+push). `prompts/KNOWLEDGE_DESK.md` is the companion teaching prompt: a
+question-and-answer desk for understanding the pipeline and rehearsing honest
+answers for a client, kept deliberately separate from anything that can touch
+YouTube.
 
 ## Requirements
 
@@ -89,22 +107,16 @@ PATH (`brew install yt-dlp` or `pip install yt-dlp`); everything else here needs
 external tools.
 
 Every script in `core/` expects to be run from inside a per-channel working folder
-that holds a `config.json` with at least:
+that holds a `config.json` copied from `core/config.template.json` with every
+placeholder filled in (see the template's own inline comments for what each field
+does and why it has no working default).
 
-```json
-{
-  "playlist_id": "PL...",
-  "playlist_name": "My playlist",
-  "channel_name": "My channel",
-  "expected_channel_id": "UC...",
-  "csv_paths": { "extracted": "descriptions_extracted.csv" },
-  "transcripts": { "langs": ["en"] }
-}
-```
-
-`config.template.json` and the OAuth setup script (`auth_setup.py`) haven't landed in
-this repo yet — they're a couple of days out. Until then, `snapshot.py`, `extract.py`,
-and `revert*.py` (which write to YouTube or read authenticated data) need a
-`token.json` you generate yourself via the YouTube Data API v3 OAuth flow;
-`audit_playlist.py` and `fetch_thumbnails.py`/`fetch_transcripts.py` need no auth at
-all (they read public pages only).
+The OAuth setup script (`auth_setup.py`) and the config-readiness checker
+(`assert_config_ready.py`, referenced in `config.template.json`'s own inline
+comments) haven't landed in this repo yet — they're a couple of days out. Until
+then, `snapshot.py`, `extract.py`, and `revert*.py` (which write to YouTube or
+read authenticated data) need a `token.json` you generate yourself via the
+YouTube Data API v3 OAuth flow, and you fill in `config.json` by hand against the
+template's placeholders; `audit_playlist.py` and
+`fetch_thumbnails.py`/`fetch_transcripts.py` need no auth at all (they read
+public pages only).
