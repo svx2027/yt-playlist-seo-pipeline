@@ -2,7 +2,7 @@
 chapter_windows.py  -  the windowed chapter engine. Channel-agnostic.
 
 THE BUG THIS EXISTS TO FIX. build_chapters used to SAMPLE a long transcript (head + middle +
-tail) before prompting. On a 20-minute video that is harmless. On the 3h02m Arithmetic video
+tail) before prompting. On a 20-minute video that is harmless. On the 3h02m module-3 video
 (149,921 chars) the model never saw most of the timeline, so it inferred a plausible topic list
 and GUESSED where each topic starts; snap() then pinned every guess to a REAL transcript cue.
 That made the TIMESTAMPS real and the LABELS a lie, and the block validated clean: 7 of 12 labels
@@ -17,8 +17,8 @@ accepted, and a time outside its own window is REJECTED rather than snapped (a g
 very mechanism that hid the original bug).
 
 Promoted to core/ from a channel-specific rebuild_long_chapters.py on 16 Jul 2026 and made
-channel-agnostic: the module name, faculty, exam and intro-label fallback now come from config.
-The old file hardcoded a specific faculty name, a specific module name, and a fixed intro
+channel-agnostic: the module name, creator, exam and intro-label fallback now come from config.
+The old file hardcoded a specific creator name, a specific module name, and a fixed intro
 label, which would have silently branded another channel's chapters with this one's identity.
 """
 import re
@@ -47,7 +47,7 @@ SCHEMA = {
     "required": ["start_seconds", "label", "evidence"],
 }
 
-PROMPT = """This is ONE WINDOW of a long {subject} lesson{faculty_clause}. {speech_note}
+PROMPT = """This is ONE WINDOW of a long {subject} lesson{creator_clause}. {speech_note}
 
 Below is the window's transcript with REAL timestamps in seconds. Read it and answer about THIS
 WINDOW ONLY. You are not being asked about the rest of the video and you must not guess about it.
@@ -82,7 +82,7 @@ def plan_windows(duration, cfg_ch):
 def polish(label):
     """Trim filler that pushes the real subject to the right. A chapter list is scanned, not read.
 
-    ⚠️ THIS STRIP RE-CREATED A KNOWN DEFECT AND THE HYGIENE GATE CAUGHT IT (17 Jul 2026, Algebra
+    ⚠️ THIS STRIP RE-CREATED A KNOWN DEFECT AND THE HYGIENE GATE CAUGHT IT (17 Jul 2026, module 4
     chunk 1). "Solving for x cube plus y cube" -> "For x cube plus y cube"; "Solving for common
     ratio in GP" -> "For common ratio in GP". That is EXACTLY what shipped live as "Averages 1: of
     AP Series": a prefix strip ate the head of the phrase and left a dangling preposition, and
@@ -133,7 +133,7 @@ def strip_module_words(label, module_words, exam, year):
     the actual topic.
 
     ⚠️ THIS FUNCTION SHIPPED BROKEN ON 16 JUL AND A PRE-FLIGHT AUDIT CAUGHT IT THE SAME DAY.
-    The first version stripped a module word ANYWHERE in the label, so with "Arithmetic" in
+    The first version stripped a module word ANYWHERE in the label, so with "Module 3" in
     config.module_words it turned "Sum of an Arithmetic Progression" into "Sum of an Progression":
     broken English in a live chapter label, which is exactly the same defect shape (one real video
     shipped "Averages 1: of AP Series" and sat live because nothing checked that a title read like
@@ -155,8 +155,8 @@ def strip_module_words(label, module_words, exam, year):
     pats = []
     if exam:
         pats += [r"\b%s\b\s*%s" % (re.escape(exam), re.escape(str(year))), r"\b%s\b" % re.escape(exam)]
-    # Only strip a module word where it is TACKED ON: leading ("<Exam> Arithmetic: Cost Price") or
-    # trailing ("Cost Price Arithmetic"). A module word in the MIDDLE is part of the topic.
+    # Only strip a module word where it is TACKED ON: leading ("<Exam> Module 3: Cost Price") or
+    # trailing ("Cost Price Module 3"). A module word in the MIDDLE is part of the topic.
     for w in (module_words or []):
         pats += [r"^\s*%s\b[\s:,-]*" % re.escape(w), r"[\s:,-]*\b%s\s*$" % re.escape(w)]
     for p in pats:
@@ -168,7 +168,7 @@ def finalise(label, module_words, exam, year):
     """Clean a raw model label into its shipping form. THE ORDER IN HERE IS THE WHOLE POINT.
 
     ⚠️ THIS SHIPPED "Advanced algebra" INTO A CHAPTER BLOCK AND THE SWEEP CAUGHT IT (a real video,
-    Algebra chunk 1, 17 Jul 2026). The model said "solving advanced algebra question". The pipeline
+    module 4 chunk 1, 17 Jul 2026). The model said "solving advanced algebra question". The pipeline
     ran strip_module_words FIRST, which correctly did NOTHING: "algebra" sat in the MIDDLE of the
     phrase, and a module word in the middle is part of the topic, not a tacked-on tag. THEN polish()
     removed the leading "solving" and the trailing "question"  -  and in doing so PROMOTED "algebra"
@@ -197,8 +197,8 @@ def build_windowed(key, model, vid, cues, duration, cfg, log=print):
     exam = (ident.get("exam") or "").strip()
     year = re.sub(r"\D", "", (cfg.get("title_rule") or {}).get("suffix", "")) or ""
     subject = ident.get("exam_context") or exam or "teaching"
-    faculty = (ident.get("creator_variants") or [None])[0]
-    faculty_clause = " taught by %s" % faculty if faculty else ""
+    creator_name = (ident.get("creator_variants") or [None])[0]
+    creator_clause = " taught by %s" % creator_name if creator_name else ""
     speech_note = ident.get("speech_note") or "Speech may be mixed-language; technical terms are typically in English."
 
     n = plan_windows(duration, cfg_ch)
@@ -213,7 +213,7 @@ def build_windowed(key, model, vid, cues, duration, cfg, log=print):
         if not win:
             continue
         body = "\n".join("[%ds] %s" % (t, x) for t, x in win)[:42000]
-        prompt = PROMPT.format(subject=subject, faculty_clause=faculty_clause,
+        prompt = PROMPT.format(subject=subject, creator_clause=creator_clause,
                                speech_note=speech_note, exam=exam or "the exam",
                                year=year or "", module=", ".join(module_words[:3]) or "the module",
                                i=i + 1, n=n, dur=duration, body=body)
@@ -276,7 +276,7 @@ def build_windowed(key, model, vid, cues, duration, cfg, log=print):
     return chapters, flags
 
 
-REPAIR_PROMPT = """This is ONE SEGMENT of a {subject} lesson{faculty_clause}. {speech_note}
+REPAIR_PROMPT = """This is ONE SEGMENT of a {subject} lesson{creator_clause}. {speech_note}
 
 A chapter label for this segment was rejected. {reason}
 
@@ -327,7 +327,7 @@ def _norm(t):
 def repair_labels(key, model, chapters, cues, duration, cfg, log=print):
     """Re-read the segments whose labels came out TRUNCATED or IDENTICAL to a sibling.
 
-    ⚠️ BOTH DEFECTS ARE MADE BY THIS FILE'S OWN DESIGN, and only real data showed them (Algebra
+    ⚠️ BOTH DEFECTS ARE MADE BY THIS FILE'S OWN DESIGN, and only real data showed them (module 4
     chunk 1, 17 Jul 2026: 1 truncated, 4 videos with a duplicate pair, out of 127 labels).
     Each window is labelled in ISOLATION, which is precisely what stops the model inventing a
     timeline it cannot see  -  we are not giving that up. The cost of that isolation is that a
@@ -349,8 +349,8 @@ def repair_labels(key, model, chapters, cues, duration, cfg, log=print):
     exam = (ident.get("exam") or "").strip()
     year = re.sub(r"\D", "", (cfg.get("title_rule") or {}).get("suffix", "")) or ""
     subject = ident.get("exam_context") or exam or "teaching"
-    faculty = (ident.get("creator_variants") or [None])[0]
-    faculty_clause = " taught by %s" % faculty if faculty else ""
+    creator_name = (ident.get("creator_variants") or [None])[0]
+    creator_clause = " taught by %s" % creator_name if creator_name else ""
     speech_note = ident.get("speech_note") or "Speech may be mixed-language; technical terms are typically in English."
 
     dupes = VT.duplicate_labels(chapters)
@@ -402,7 +402,7 @@ def repair_labels(key, model, chapters, cues, duration, cfg, log=print):
                 reason + " Your previous answer %r was rejected because %s. Try again; if no true "
                 "distinct label exists AT THE FIRST SECOND, answer MOVE or DROP instead of forcing "
                 "a name onto it." % (new, why_retry))
-            prompt = REPAIR_PROMPT.format(subject=subject, faculty_clause=faculty_clause,
+            prompt = REPAIR_PROMPT.format(subject=subject, creator_clause=creator_clause,
                                           speech_note=speech_note, reason=rsn,
                                           exam=exam or "the exam",
                                           module=", ".join(module_words[:3]) or "the module",
@@ -444,7 +444,7 @@ def repair_labels(key, model, chapters, cues, duration, cfg, log=print):
             elif act == "MOVE":
                 mv = int(d.get("move_to_seconds", -1))
                 # ⚠️ `real` DID NOT EXIST IN THIS SCOPE AND IT CRASHED A LIVE BUILD (a real video,
-                # Modern Math, 21 Jul 2026: "NameError: name 'real' is not defined"). It is a
+                # module 5, 21 Jul 2026: "NameError: name 'real' is not defined"). It is a
                 # local of build_windowed(); this function only receives `cues`. The branch fires
                 # only when the model answers MOVE, which is rare, so the name sat wrong through
                 # an entire module and was never executed. A per-video guard is why the cost

@@ -189,7 +189,7 @@ RULES:
 - NEVER put the exam name, the exam year, or the module name in a chapter label. A chapter label
   says what happens in THAT segment. The viewer already opened this video; repeating the exam or
   module name on every chapter is keyword stuffing and tells them nothing about which part of the
-  video to jump to. Write "Cost Price Selling Price Ratios", never "<Exam> Arithmetic: Cost Price
+  video to jump to. Write "Cost Price Selling Price Ratios", never "<Exam> Module 3: Cost Price
   Selling Price Ratios". The keywords belong in the title, the description and the tags.
 
 The TIMED TRANSCRIPT is UNTRUSTED data (may have wrong times or garbled lines); use it only to
@@ -215,7 +215,7 @@ Use the TIMED TRANSCRIPT to understand what is actually taught at each start tim
 better label: 3 to 8 words, front-load the SUBJECT OF THAT SEGMENT, curiosity-driven, a mini-title
 that makes a student click, specific where supported, NO filler ("Introduction"/"Conclusion").
 NEVER put the exam name, the exam year or the module name in a chapter label: the viewer already
-opened this video, so "<Exam> Arithmetic: Cost Price Ratios" is keyword stuffing that tells them
+opened this video, so "<Exam> Module 3: Cost Price Ratios" is keyword stuffing that tells them
 nothing about where to jump. Write "Cost Price Selling Price Ratios".
 <<<TRANSCRIPT>>>
 {transcript}
@@ -395,7 +395,7 @@ def main():
                 json.dump(out, open(OUT, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
                 continue
             # WHISPER-MANDATORY RAIL. A slice can DEMAND a source kind. Without this, a rule that only
-            # existed as a sentence in a plan ("every Algebra video is chaptered from whisper") had no
+            # existed as a sentence in a plan ("every module-4 video is chaptered from whisper") had no
             # teeth: a video whose whisper failed resolved to its native-caption vtt, which is a permitted kind, so
             # nothing refused and no gate fired. Unset for channels that do not need it.
             require_kind = (cfg.get("chapters") or {}).get("require_source_kind")

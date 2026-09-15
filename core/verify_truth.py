@@ -243,7 +243,7 @@ def all_module_words(cfg, base="."):
     """Every module name that must never be tacked onto a chapter label.
 
     `config.module_words` used to be a HAND-MAINTAINED list of the modules done so far
-    ("Arithmetic", "Algebra", ...). That means the gate is blind to the module you are ACTUALLY
+    ("Module 3", "Module 4", ...). That means the gate is blind to the module you are ACTUALLY
     running the moment you start a new one, which is exactly how one module shipped a defective
     label live. Union the configured list with every distinct topic in module_map.csv, so a new
     module is covered the day its rows exist and nobody has to remember to add it by hand.
@@ -697,7 +697,7 @@ def zero_promo_exempt(sec, label):
 # label name a topic at all", which near-duplicate never asks.
 #
 # It is a REVIEW signal, never a BLOCKER: a container word can occasionally be the real subject
-# ("Set Theory", "Number System"), so code narrows and a reader decides. Both directions measured
+# ("Set Theory", "Probability"), so code narrows and a reader decides. Both directions measured
 # in the same edit: see test_chapter_gates.py, precision run against EVERY live chapter label in
 # the playlist, recall against the canonical generic forms.
 GENERIC_CONTAINERS = {
@@ -727,7 +727,7 @@ def generic_label(label):
     after stripping index numerals, roman/ordinal indices and content-free filler, EITHER nothing
     is left ("Question 1" -> {}), OR every surviving token is a bare container noun that names no
     subject ("Practice Set" -> {practice, set}). A single genuine topic token clears it
-    ("Sum of 19 with four dice" keeps {dice}; "Algebra: Maximizing a Quadratic" keeps {maximizing,
+    ("Sum of 19 with four dice" keeps {dice}; "Module 4: Maximizing a Quadratic" keeps {maximizing,
     quadratic}), so a real maths label whose numbers ARE the question is never touched."""
     toks = re.findall(r"[a-z]+|[0-9]+", (label or "").lower())
     content = [t for t in toks
@@ -745,7 +745,7 @@ def generic_label(label):
 
 def hygiene(label, module_words=None, exam=None):
     """module_words comes from config (config.module_words). It was HARDCODED to
-    Arithmetic/Quantitative Aptitude/Quant until 16 Jul 2026, which made this rule blind in every
+    Module 3/Quantitative Aptitude/Quant until 16 Jul 2026, which made this rule blind in every
     other module by construction: that is how a defect (a live "... Books Quant" chapter label)
     shipped and sat live ~20h. A gate that only works on the module it was written for is not a
     gate.
@@ -762,7 +762,7 @@ def hygiene(label, module_words=None, exam=None):
                                         label, re.I)
     if exam_hit or STALE_YEAR_RE.search(label):
         bad.append("names the exam/year")
-    words = module_words or ["Arithmetic", "Quantitative Aptitude", "Quant"]
+    words = module_words or ["Module 3", "Quantitative Aptitude", "Quant"]
     pat = r"\s(%s)\s*$" % "|".join(re.escape(w) for w in words)
     if re.search(pat, label, re.I) and not MODULE_WORD_EXCEPTIONS.search(label):
         bad.append("module word tacked on")
