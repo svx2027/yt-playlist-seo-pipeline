@@ -63,6 +63,10 @@ Landing here Aug 21-27, 2026 (see the commit history for progress).
   reimplementing, because two copies of one rule that can silently disagree is
   not a gate. Every check that can be proven is a BLOCKER; everything else is
   narrowed into a REVIEW queue for a human or model skeptic to adjudicate.
+  See [`docs/DEFECT_INJECTION_EXAMPLE.md`](docs/DEFECT_INJECTION_EXAMPLE.md)
+  and `tests/test_defect_injection_example.py` for a runnable example of the
+  rule this gate is built on: a check only counts once it's been watched
+  fail on the real defect it exists to catch, not just pass on good input.
 - `core/verify_transcripts.py` — the second opinion on a module's timed
   transcripts, by content, run independently of `verify_truth`'s own parser on
   purpose (a shared parser reproduces its own bugs instead of catching them).
