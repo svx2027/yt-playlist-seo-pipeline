@@ -6,7 +6,9 @@ timestamps, grounded in each video's own transcript, then updates the playlist's
 metadata and verifies every change against what was approved. Snapshots give revert
 insurance at every step.
 
-Landing here Aug 21-27, 2026 (see the commit history for progress).
+Landing incrementally since Aug 21, 2026 (see the commit history for progress).
+See [`docs/SAFETY_ARCHITECTURE.md`](docs/SAFETY_ARCHITECTURE.md) for exactly which
+guardrails are live code today versus still design-only.
 
 ## What's live so far
 
@@ -17,13 +19,18 @@ Landing here Aug 21-27, 2026 (see the commit history for progress).
   before anything changes. The rescue file.
 - `core/extract.py` — pulls playlist video metadata into a review CSV, with a tag-
   overlap column that surfaces tag-consistency issues at a glance.
-- `core/fetch_thumbnails.py` — capture-only thumbnail download (no API quota, no
-  YouTube write path exists anywhere in this project).
+- `core/fetch_thumbnails.py` — capture-only thumbnail download (no API quota needed,
+  read-only).
 - `core/fetch_transcripts.py` — pulls YouTube's own captions via yt-dlp and scores
   each one's confidence (density + language mix), queuing thin or missing transcripts
   for a Whisper fallback.
 - `core/revert.py` / `core/revert_playlist.py` — restore video or playlist metadata
-  from a snapshot if something goes wrong. Never deletes anything.
+  from a snapshot if something goes wrong. These are the only two scripts in this
+  repo today that write to YouTube, and they exist to restore, never to publish a
+  rewrite: a wrong-channel guard runs before the first write, every run is a
+  dry-run by default with an explicit typed confirmation for a real one, and a
+  local log makes a re-run skip whatever it already reverted. Never deletes
+  anything. Full detail in `docs/SAFETY_ARCHITECTURE.md`.
 - `core/write_descriptions.py` — generates a proposed title, description, and tags
   per video, grounded in that video's transcript. Every piece of channel identity
   (creator, exam, links, hashtags, year tag) comes from `config.json`, never
@@ -83,9 +90,11 @@ Landing here Aug 21-27, 2026 (see the commit history for progress).
   one that fails outright, because a failure is visible and a stale value
   silently publishing onto the wrong channel is not.
 
-More of the engine (the findings-gate and pre-flight auditor, the OAuth setup
-script, and the platform-outcome checks) is landing over the next few days — see
-the commit history for progress.
+More of the engine (the canary-then-batch live push, the machine-diff verifier,
+the findings-gate and pre-flight auditor, the OAuth setup script, and the
+platform-outcome checks) is still landing — see the commit history for
+progress, and `docs/SAFETY_ARCHITECTURE.md` for exactly what that push path is
+designed to do versus what's actually runnable here today.
 
 ## Operator prompts
 
@@ -117,8 +126,8 @@ does and why it has no working default).
 
 The OAuth setup script (`auth_setup.py`) and the config-readiness checker
 (`assert_config_ready.py`, referenced in `config.template.json`'s own inline
-comments) haven't landed in this repo yet — they're a couple of days out. Until
-then, `snapshot.py`, `extract.py`, and `revert*.py` (which write to YouTube or
+comments) haven't landed in this repo yet. Until then, `snapshot.py`,
+`extract.py`, and `revert*.py` (which write to YouTube or
 read authenticated data) need a `token.json` you generate yourself via the
 YouTube Data API v3 OAuth flow, and you fill in `config.json` by hand against the
 template's placeholders; `audit_playlist.py` and
