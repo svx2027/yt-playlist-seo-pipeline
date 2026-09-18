@@ -133,3 +133,31 @@ YouTube Data API v3 OAuth flow, and you fill in `config.json` by hand against th
 template's placeholders; `audit_playlist.py` and
 `fetch_thumbnails.py`/`fetch_transcripts.py` need no auth at all (they read
 public pages only).
+
+## Environment variables
+
+| var | purpose | required |
+|---|---|---|
+| `GEMINI_API_KEY` | Gemini key used by `core/_gemini.py` for chapter labeling and keyword clustering. Get one at [aistudio.google.com/apikey](https://aistudio.google.com/apikey). | for any script that calls Gemini (`build_chapters.py`, `chapter_windows.py`, `write_descriptions.py`) |
+
+Copy [`.env.example`](.env.example) to the `.env` file your channel's
+`config.json` points at via `gemini_env_path` and fill in the real key.
+`core/_gemini.py` loads it by that path at runtime, never from this repo's own
+root — the key is never copied into this project and never printed. `.env` is
+already excluded in `.gitignore`.
+
+## Tests
+
+```
+python3 -m unittest discover -s tests -v
+```
+
+Today that runs [`tests/test_defect_injection_example.py`](tests/test_defect_injection_example.py),
+a runnable example of this project's testing doctrine: a gate only counts once
+it's been watched fail on the real defect it exists to catch, not just pass on
+good input. See [`docs/DEFECT_INJECTION_EXAMPLE.md`](docs/DEFECT_INJECTION_EXAMPLE.md)
+for the write-up.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
