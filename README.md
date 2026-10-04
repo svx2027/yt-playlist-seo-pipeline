@@ -161,3 +161,18 @@ for the write-up.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Related tools
+
+- [yt-bulk-metadata-kit](https://github.com/svx2027/yt-bulk-metadata-kit):
+  a lighter OAuth-based bulk metadata updater for a whole playlist at once
+  (title/description/tags/comments), without the transcript-grounded
+  rewrite or chapter-building this pipeline does.
+- [yt-mastersheet-kit](https://github.com/svx2027/yt-mastersheet-kit): the
+  same verify-before-deliver discipline, applied to channel tracking
+  instead of metadata rewriting.
+- [playlist-extract-pipeline](https://github.com/svx2027/playlist-extract-pipeline):
+  pulls a playlist's metadata, thumbnails, and transcripts (no API key) —
+  useful upstream of this pipeline's transcript-grounded rewrite.
+
+Full index of all public repos: [github.com/svx2027](https://github.com/svx2027).
