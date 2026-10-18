@@ -158,6 +158,27 @@ it's been watched fail on the real defect it exists to catch, not just pass on
 good input. See [`docs/DEFECT_INJECTION_EXAMPLE.md`](docs/DEFECT_INJECTION_EXAMPLE.md)
 for the write-up.
 
+## Honest scope
+
+- No live-push path yet: `core/write_descriptions.py`, `core/build_chapters.py`,
+  and `core/chapter_windows.py` all write drafts to a CSV only. The only two
+  scripts here that write to YouTube at all are `core/revert.py` and
+  `core/revert_playlist.py`, and both exist to restore a snapshot, never to
+  publish a rewrite. The canary-then-batch push, the machine-diff verifier,
+  and the findings/pre-flight gates are designed (see
+  [`docs/SAFETY_ARCHITECTURE.md`](docs/SAFETY_ARCHITECTURE.md) for the full
+  live-vs-designed table) but not yet ported into this repo's `core/`.
+- No guided setup yet: `auth_setup.py` and `assert_config_ready.py`, both
+  referenced by `core/config.template.json`'s own inline comments, haven't
+  landed here. Until they do, you generate `token.json` yourself via the
+  YouTube OAuth flow and hand-fill `config.json` against the template.
+- Test coverage is one worked example, not a full suite: `tests/` currently
+  holds `test_defect_injection_example.py`, which proves the label-drift
+  check in `verify_truth.py` fires on a real injected defect. The rest of
+  `verify_truth.py` and all of `verify_transcripts.py` have no tests yet.
+- No CI workflow is wired up on this repo yet (several sibling repos in this
+  portfolio already run tests on every push; this one doesn't).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
