@@ -158,6 +158,15 @@ it's been watched fail on the real defect it exists to catch, not just pass on
 good input. See [`docs/DEFECT_INJECTION_EXAMPLE.md`](docs/DEFECT_INJECTION_EXAMPLE.md)
 for the write-up.
 
+## Platform notes
+
+[`docs/PLATFORM_NOTES.md`](docs/PLATFORM_NOTES.md) collects specific YouTube
+platform behaviors this project's design has to account for — not API reference
+material, but the gotchas a competent engineer would reasonably get wrong on
+first instinct. First entry: chapters render asynchronously and can render as
+something other than what you wrote, which is why "the chapter block is built
+and true" and "the chapter list a viewer sees" are two different claims.
+
 ## Honest scope
 
 - No live-push path yet: `core/write_descriptions.py`, `core/build_chapters.py`,
